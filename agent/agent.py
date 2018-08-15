@@ -1,12 +1,12 @@
+import random
+from collections import deque
+
 import keras
 import numpy as np
 from keras.models import Sequential
 from keras.models import load_model
 from keras.layers import Dense
 from keras.optimizers import Adam
-
-import random
-from collections import deque
 
 # AGENT - Stock Trading Bot
 class Agent:
@@ -49,6 +49,10 @@ class Agent:
 		model.add(Dense(self.action_size, activation="linear"))
 		model.compile(loss=self.loss, optimizer=self.optimizer)
 		return model
+
+	# Remember the action on a certain step
+	def remember(self, state, action, reward, next_state, done):
+		self.memory.append((state, action, reward, next_state, done))
 
     # Take action from given possible actions
 	def act(self, state):

@@ -2,8 +2,11 @@ import math
 
 import numpy as np
 
-# Formats price
-format_price = lambda price: ('-$' if price < 0 else '$') + '{0:.2f}'.format(abs(price))
+# Formats Position
+format_position = lambda price: ('-$' if price < 0 else '+$') + '{0:.2f}'.format(abs(price))
+
+# Formats Currency
+format_currency = lambda price: '${0:.2f}'.format(abs(price))
 
 # Computes sigmoid activation
 def sigmoid(x):
@@ -18,7 +21,7 @@ def sigmoid(x):
 	except Exception as err:
 		print("Error in sigmoid: " + err)
 
-# Returns the vector containing stock data from a fixed file
+# Returns the list containing stock data from historical financial data csv file
 def get_stock_data(stock):
 	stock_prices = []
 	

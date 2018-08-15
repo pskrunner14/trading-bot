@@ -1,7 +1,11 @@
 import sys
+import os
+
+# Faster computation on CPU (only if using tensorflow-gpu)
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 from agent.agent import Agent
-from utils import get_stock_data, get_state, format_price
+from utils import get_stock_data, get_state, format_position, format_currency
 
 JUPYTER = False
 
@@ -9,8 +13,8 @@ if JUPYTER:
     stock_name = input('Enter stock: ')
     window_size = int(input('Enter window size: '))
     model_name = input('Enter model name if any (otherwise leave blank): ')
-else:    
-    if len(sys.argv) < 3:
+else:
+    if len(sys.argv) < 4:
         print('Usage: python train.py [stock] [window] [model]')
         exit(0)
     stock_name, window_size, model_name = sys.argv[1], int(sys.argv[2]), sys.argv[3]
@@ -35,14 +39,15 @@ for t in range(data_length):
 	# BUY
 	if action == 1:
 		agent.inventory.append(data[t])
-		print('Buy at: {}'.format(format_price(data[t])))
-
+		print('Buy at: {}'.format(format_position(data[t])))
 	# SELL
 	elif action == 2 and len(agent.inventory) > 0:
 		bought_price = agent.inventory.pop(0)
 		reward = max(data[t] - bought_price, 0)
 		total_profit += data[t] - bought_price
-		print('Sell at: {} | Position: {}'.format(format_price(data[t]), format_price(data[t] - bought_price)))
+		print('Sell at: {} | Position: {}'.format(format_currency(data[t]), format_position(data[t] - bought_price)))
+	else:
+		print('Sit at: {}'.format(format_currency(data[t])))
 
 	done = True if t == data_length - 1 else False
 	agent.memory.append((state, action, reward, next_state, done))
@@ -50,5 +55,5 @@ for t in range(data_length):
 
 	if done:
 		print('\n--------------------------------')
-		print('Final Position: {}'.format(format_price(total_profit)))
+		print('Final Position: {}'.format(format_position(total_profit)))
 		print('--------------------------------\n')

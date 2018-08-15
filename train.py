@@ -1,14 +1,17 @@
 import sys
 import os
 
+# Faster computation on CPU (only if using tensorflow-gpu)
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
 from tqdm import tqdm
-from time import process_time
+from time import clock
 import numpy as np
 
 from IPython.display import clear_output
 
 from agent.agent import Agent
-from utils import get_stock_data, get_state, format_price
+from utils import get_stock_data, get_state, format_currency, format_position
 
 JUPYTER = False
 
@@ -19,7 +22,7 @@ if JUPYTER:
     model_name = input('Enter model name if any (otherwise leave blank): ')
     pretrained = int(input('Pretrained model? (0/1)'))
 else:    
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 6:
         print('Usage: python train.py [stock] [window] [episodes] [model] [pretrained (0/1)]')
         exit(0)
     stock_name, window_size, episode_count, model_name, pretrained = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], int(sys.argv[5])
@@ -33,7 +36,7 @@ results = []
 
 def print_results(results, episode_count):
     for episode, position, avg_loss, time in results:
-        print('Episode {}/{} - Position: {}  Loss: {:.4f}  (~{:.4f} secs)'.format(episode, episode_count, format_price(position), avg_loss, time))
+        print('Episode {}/{} - Position: {}  Loss: {:.4f}  (~{:.4f} secs)'.format(episode, episode_count, format_position(position), avg_loss, time))
 
 for episode in range(1, episode_count + 1):
 
@@ -43,7 +46,8 @@ for episode in range(1, episode_count + 1):
         os.system('cls')
     print_results(results, episode_count)
     
-    start = process_time()
+
+    start = clock()
     state = get_state(data, 0, window_size + 1)
 
     total_profit = 0
@@ -62,17 +66,15 @@ for episode in range(1, episode_count + 1):
         # BUY
         if action == 1:
             agent.inventory.append(data[t])
-            # print('Buy at: {}'.format(format_price(data[t])))
 
         # SELL
         elif action == 2 and len(agent.inventory) > 0:
             bought_price = agent.inventory.pop(0)
             reward = max(data[t] - bought_price, 0)
             total_profit += data[t] - bought_price
-            # print('Sell at: {} | Position: {}'.format(format_price(data[t]), format_price(data[t] - bought_price)))
 
         done = True if t == data_length - 1 else False
-        agent.memory.append((state, action, reward, next_state, done))
+        agent.remember(state, action, reward, next_state, done)
         state = next_state
 
         if len(agent.memory) > batch_size:
@@ -80,10 +82,8 @@ for episode in range(1, episode_count + 1):
             avg_loss.append(loss)
 
         if done:
-            end = process_time() - start
+            end = clock() - start
             results.append((episode, total_profit, np.mean(np.array(avg_loss)), end))
 
     if episode % 20 == 0:
         agent.model.save('models/{}_{}'.format(model_name, episode))
-        print('\n{} model saved!\n'.format(model_name))
-
