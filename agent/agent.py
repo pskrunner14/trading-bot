@@ -7,6 +7,7 @@ from keras.models import Sequential
 from keras.models import load_model
 from keras.layers import Dense
 from keras.optimizers import Adam
+from keras.regularizers import l1, l2
 
 # AGENT - Stock Trading Bot
 class Agent:
@@ -43,10 +44,21 @@ class Agent:
     # Create the model
 	def _model(self):
 		model = Sequential()
-		model.add(Dense(units=64, input_dim=self.state_size, activation="relu"))
-		model.add(Dense(units=32, activation="relu"))
-		model.add(Dense(units=8, activation="relu"))
-		model.add(Dense(self.action_size, activation="linear"))
+		# Input Layer
+		model.add(Dense(units=64, input_dim=self.state_size, activation="relu", 
+						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
+						activity_regularizer=l1(0.01)))
+		# 2 Hidden Layers
+		model.add(Dense(units=32, activation="relu", 
+						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
+						activity_regularizer=l1(0.01)))
+		model.add(Dense(units=8, activation="relu", 
+						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
+						activity_regularizer=l1(0.01)))
+		# Output Layer
+		model.add(Dense(self.action_size, 
+						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
+						activity_regularizer=l1(0.01)))
 		model.compile(loss=self.loss, optimizer=self.optimizer)
 		return model
 
