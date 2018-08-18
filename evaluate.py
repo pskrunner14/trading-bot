@@ -5,57 +5,45 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 from agent.agent import Agent
-from utils import get_stock_data, get_state, format_position, format_currency
+from model import evaluate_model
+from utils import get_stock_data, format_position
 
-def evaluate_model(model_name):
 
-	agent = Agent(window_size, is_eval=True, pretrained=True, model_name=model_name)
-	data = get_stock_data(stock_name)
-	data_length = len(data) - 1
+"""
+Show Evaluation result
+"""
 
-	state = get_state(data, 0, window_size + 1)
-	total_profit = 0
-	agent.inventory = []
+def show_eval_result(model_name, profit, initial_offset):
+	if profit == initial_offset or profit == 0.0:
+		print('{}: USELESS\n'.format(model_name))
+	else: 
+		print('{}: {}\n'.format(model_name, format_position(profit)))
 
-	for t in range(data_length):
-
-		action = agent.act(state)
-
-		# SIT
-		next_state = get_state(data, t + 1, window_size + 1)
-		reward = 0
-
-		# BUY
-		if action == 1:
-			agent.inventory.append(data[t])
-			# print('Buy at: {}'.format(format_currency(data[t])))
-		# SELL
-		elif action == 2 and len(agent.inventory) > 0:
-			bought_price = agent.inventory.pop(0)
-			reward = max(data[t] - bought_price, 0)
-			total_profit += data[t] - bought_price
-			# print('Sell at: {} | Position: {}'.format(format_currency(data[t]), format_position(data[t] - bought_price)))
-		# else:
-			# print('Sit at: {}'.format(format_currency(data[t])))
-
-		done = True if t == data_length - 1 else False
-		agent.memory.append((state, action, reward, next_state, done))
-		state = next_state
-
-		if done:
-			return total_profit
 
 if __name__ == '__main__':
 
-	if len(sys.argv) < 3:
-		print('Usage: python train.py [stock] [window]')
-		exit(0)
-	stock_name, window_size = sys.argv[1], int(sys.argv[2])
+	model_name = None
 
-	for model in os.listdir('models'):
-		if not os.path.isdir('models/{}'.format(model)) and 'memory' not in model:
-			profit = evaluate_model(model)
-			if profit == 6.5 or profit == 0.0:
-				print('USELESS: {}'.format(model))
-			else: 
-				print('{}: {}'.format(model, format_position(profit)))
+	if len(sys.argv) == 3:
+		stock_name, window_size = sys.argv[1], int(sys.argv[2])
+	elif len(sys.argv) == 4:
+		stock_name, window_size, model_name = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+	else:
+		print('Usage: python evaluate.py [stock] [window] [model (optional)]')
+		exit(0)
+
+	data = get_stock_data(stock_name)
+	initial_offset = data[1] - data[0]
+
+	if model_name is not None:
+		agent = Agent(window_size, pretrained=True, model_name=model_name)
+		profit = evaluate_model(agent, data, window_size=window_size)
+		show_eval_result(model_name, profit, initial_offset)
+		del agent
+	else:
+		for model in os.listdir('models'):
+			if not os.path.isdir('models/{}'.format(model)) and 'memory' not in model:
+				agent = Agent(window_size, pretrained=True, model_name=model)
+				profit = evaluate_model(agent, data, window_size=window_size)
+				show_eval_result(model, profit, initial_offset)
+				del agent

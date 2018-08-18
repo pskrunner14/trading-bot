@@ -1,82 +1,49 @@
 import sys
 import os
 
-# Faster computation on CPU (only if using tensorflow-gpu)
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-
-from tqdm import tqdm
-from time import clock
-import numpy as np
-
-from IPython.display import clear_output
+import tensorflow as tf
 
 from agent.agent import Agent
-from utils import get_stock_data, get_state, format_currency, format_position
+from model import train_model, evaluate_model
+from utils import get_stock_data, format_position
 
-JUPYTER = False
+TENSORFLOW_BACKEND = True
 
-if JUPYTER:
-    stock_name = input('Enter stock: ')
-    window_size = int(input('Enter window size: '))
-    episode_count = int(input('Enter episode count: '))
-    model_name = input('Enter model name if any (otherwise leave blank): ')
-    pretrained = bool(int(input('Pretrained model? (0/1)')))
-else:    
-    if len(sys.argv) < 6:
-        print('Usage: python train.py [stock] [window] [episodes] [model] [pretrained (0/1)]')
+"""
+Print result
+"""
+
+def show_train_result(result, val_position, initial_offset):
+    if val_position == initial_offset or val_position == 0.0:
+        print('Episode {}/{} - Train Position: {}  Val Position: USELESS  Loss: {:.4f}  (~{:.4f} secs)'.format(result[0], 
+                result[1], format_position(result[2]), result[3], result[4]))
+    else:
+        print('Episode {}/{} - Train Position: {}  Val Position: {}  Loss: {:.4f}  (~{:.4f} secs)'.format(result[0], 
+                result[1], format_position(result[2]), format_position(val_position), result[3], result[4]))
+
+if __name__ == '__main__':
+
+    """Faster computation on CPU (only if using tensorflow-gpu)"""
+    if TENSORFLOW_BACKEND:
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
+    if len(sys.argv) < 7:
+        print('Usage: python train.py [train stock] [val stock] [window] [episodes] [model] [pretrained (0/1)]')
         exit(0)
-    stock_name, window_size, episode_count, model_name, pretrained = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], bool(int(sys.argv[5]))
+    train_stock_name, val_stock_name, window_size, episode_count, model_name, pretrained = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5], bool(int(sys.argv[6]))
 
-agent = Agent(window_size, pretrained=pretrained, model_name=model_name)
-data = get_stock_data(stock_name)
-data_length = len(data) - 1
-batch_size = 50
+    agent = Agent(window_size, pretrained=pretrained, model_name=model_name)
+    train_data = get_stock_data(train_stock_name)
+    test_data = get_stock_data(val_stock_name)
 
-results = []
+    batch_size = 32
+    initial_offset = test_data[1] - test_data[0]
 
-def print_result(episode, episode_count, position, avg_mse, time):
-    print('Episode {}/{} - Position: {}  MSE: {:.4f}  (~{:.4f} secs)'.format(episode, episode_count, format_position(position), avg_mse, time))
-
-for episode in range(1, episode_count + 1):
+    for episode in range(1, episode_count + 1):
+        train_result = train_model(agent, episode, train_data, episode_count=episode_count,
+                    batch_size=batch_size, window_size=window_size)
+        val_result = evaluate_model(agent, test_data, 
+                    window_size=window_size)
+        show_train_result(train_result, val_result, initial_offset)
     
-    if JUPYTER:
-        clear_output()
-    start = clock()
-
-    state = get_state(data, 0, window_size + 1)
-    total_profit = 0
-    agent.inventory = []
-    avg_mse = []
-
-    for t in tqdm(range(data_length), total=data_length, leave=False, desc='Episode {}/{}'.format(episode, episode_count)):
-
-        action = agent.act(state)
-
-        # SIT
-        next_state = get_state(data, t + 1, window_size + 1)
-        reward = 0
-
-        # BUY
-        if action == 1:
-            agent.inventory.append(data[t])
-
-        # SELL
-        elif action == 2 and len(agent.inventory) > 0:
-            bought_price = agent.inventory.pop(0)
-            reward = max(data[t] - bought_price, 0)
-            total_profit += data[t] - bought_price
-
-        done = True if t == data_length - 1 else False
-        agent.remember(state, action, reward, next_state, done)
-        state = next_state
-
-        if len(agent.memory) > batch_size:
-            mse = agent.train_experience_replay(batch_size)
-            avg_mse.append(mse)
-
-        if done:
-            end = clock() - start
-            print_result(episode, episode_count, total_profit, np.mean(np.array(avg_mse)), end)
-
-    if episode % 10 == 0:
-        agent.save(episode)
+    print('Done Training!')
