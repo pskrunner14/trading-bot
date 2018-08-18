@@ -1,11 +1,12 @@
 import random
+import pickle
 from collections import deque
 
 import keras
 import numpy as np
 from keras.models import Sequential
 from keras.models import load_model
-from keras.layers import Dense
+from keras.layers import Activation, BatchNormalization, Dense, Dropout
 from keras.optimizers import Adam
 from keras.regularizers import l1, l2
 
@@ -20,10 +21,11 @@ class Agent:
 		self.action_size = 3            # sit, buy, sell
 		self.model_name = model_name
 		self.is_eval = is_eval
-		self.memory = deque(maxlen=1000)
 		self.inventory = []
+		self.model_type = 'REV_1'
 
         # model config
+		self.model_name = model_name
 		self.gamma = 0.95
 		self.epsilon = 1.0
 		self.epsilon_min = 0.01
@@ -35,30 +37,42 @@ class Agent:
 		self.first_iter = True
 
 		# load pretrained model or instantiate a new one
-		if pretrained and model_name is not None:
-			self.model = load_model('models/' + model_name)
-			print('Loaded {} model!\n'.format(model_name))
+		if pretrained and self.model_name is not None:
+			self.model, self.memory = self.load()
+			if not self.is_eval:
+				print('Loaded {} model and memory!\n'.format(self.model_name))
+			# self.model.summary()
 		else:
-			self.model = self._model()
+			self.model, self.memory = self._model(), deque(maxlen=1000)
 
     # Create the model
 	def _model(self):
-		model = Sequential()
-		# Input Layer
-		model.add(Dense(units=64, input_dim=self.state_size, activation="relu", 
-						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
-						activity_regularizer=l1(0.01)))
-		# 2 Hidden Layers
-		model.add(Dense(units=32, activation="relu", 
-						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
-						activity_regularizer=l1(0.01)))
-		model.add(Dense(units=8, activation="relu", 
-						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
-						activity_regularizer=l1(0.01)))
-		# Output Layer
-		model.add(Dense(self.action_size, 
-						kernel_initializer='glorot_normal',  kernel_regularizer=l2(0.01), 
-						activity_regularizer=l1(0.01)))
+		model = Sequential(name=self.model_type)
+		
+		model.add(Dense(units=24, input_dim=self.state_size,
+						kernel_initializer='glorot_normal', 
+						kernel_regularizer=l2(0.01)))
+		model.add(Activation('relu'))
+		
+		model.add(Dense(units=64,
+						kernel_initializer='glorot_normal', 
+						kernel_regularizer=l2(0.01)))
+		model.add(Activation('relu'))
+
+		model.add(Dense(units=64,
+						kernel_initializer='glorot_normal',
+						kernel_regularizer=l2(0.01)))
+		model.add(Activation('relu'))
+		
+		model.add(Dense(units=24, 
+						kernel_initializer='glorot_normal',
+						kernel_regularizer=l2(0.01)))
+		model.add(Activation('relu'))
+		
+		model.add(Dense(units=self.action_size, 
+						kernel_initializer='glorot_normal', 
+						kernel_regularizer=l2(0.01)))
+
 		model.compile(loss=self.loss, optimizer=self.optimizer)
 		return model
 
@@ -81,20 +95,44 @@ class Agent:
 		
 		mini_batch = random.sample(self.memory, batch_size)
 
-		avg_loss = []
+		X_train, y_train = [], []
 
 		for state, action, reward, next_state, done in mini_batch:
 			target = reward
+			
 			if not done:
 				target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
 
 			target_f = self.model.predict(state)
 			target_f[0][action] = target
-			history = self.model.fit(state, target_f, epochs=1, verbose=0)
-			loss = history.history['loss'][0]
-			avg_loss.append(loss)
+
+			X_train.append(state[0])
+			y_train.append(target_f[0])
+
+		history = self.model.fit(np.array(X_train), np.array(y_train), epochs=1, verbose=0)
+
+		del mini_batch
+		del X_train
+		del y_train
+
+		mse = history.history['loss'][0]
 
 		if self.epsilon > self.epsilon_min:
 			self.epsilon *= self.epsilon_decay
 
-		return np.mean(np.array(avg_loss))
+		return mse
+
+	# Save agent model and memory on disk
+	def save(self, episode):
+		self.model.save('models/{}_{}'.format(self.model_name, episode))
+		with open('models/{}_{}.memory.pkl'.format(self.model_name, episode), 'wb') as file:
+			pickle.dump(self.memory, file)
+
+	# Load the agent model and memory saved on disk
+	def load(self):
+		model = load_model('models/' + self.model_name)
+		if not self.is_eval:
+			with open('models/{}.memory.pkl'.format(self.model_name), 'rb') as file:
+				memory = pickle.load(file)
+		memory = deque(maxlen=1000)
+		return model, memory

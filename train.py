@@ -20,40 +20,33 @@ if JUPYTER:
     window_size = int(input('Enter window size: '))
     episode_count = int(input('Enter episode count: '))
     model_name = input('Enter model name if any (otherwise leave blank): ')
-    pretrained = int(input('Pretrained model? (0/1)'))
+    pretrained = bool(int(input('Pretrained model? (0/1)')))
 else:    
     if len(sys.argv) < 6:
         print('Usage: python train.py [stock] [window] [episodes] [model] [pretrained (0/1)]')
         exit(0)
-    stock_name, window_size, episode_count, model_name, pretrained = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], int(sys.argv[5])
+    stock_name, window_size, episode_count, model_name, pretrained = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], bool(int(sys.argv[5]))
 
-agent = Agent(window_size, pretrained=bool(pretrained), model_name=model_name)
+agent = Agent(window_size, pretrained=pretrained, model_name=model_name)
 data = get_stock_data(stock_name)
 data_length = len(data) - 1
-batch_size = 32
+batch_size = 50
 
 results = []
 
-def print_results(results, episode_count):
-    for episode, position, avg_loss, time in results:
-        print('Episode {}/{} - Position: {}  Loss: {:.4f}  (~{:.4f} secs)'.format(episode, episode_count, format_position(position), avg_loss, time))
+def print_result(episode, episode_count, position, avg_mse, time):
+    print('Episode {}/{} - Position: {}  MSE: {:.4f}  (~{:.4f} secs)'.format(episode, episode_count, format_position(position), avg_mse, time))
 
 for episode in range(1, episode_count + 1):
-
+    
     if JUPYTER:
         clear_output()
-    else:
-        os.system('cls')
-    print_results(results, episode_count)
-    
-
     start = clock()
-    state = get_state(data, 0, window_size + 1)
 
+    state = get_state(data, 0, window_size + 1)
     total_profit = 0
     agent.inventory = []
-
-    avg_loss = []
+    avg_mse = []
 
     for t in tqdm(range(data_length), total=data_length, leave=False, desc='Episode {}/{}'.format(episode, episode_count)):
 
@@ -78,12 +71,12 @@ for episode in range(1, episode_count + 1):
         state = next_state
 
         if len(agent.memory) > batch_size:
-            loss = agent.train_experience_replay(batch_size)
-            avg_loss.append(loss)
+            mse = agent.train_experience_replay(batch_size)
+            avg_mse.append(mse)
 
         if done:
             end = clock() - start
-            results.append((episode, total_profit, np.mean(np.array(avg_loss)), end))
+            print_result(episode, episode_count, total_profit, np.mean(np.array(avg_mse)), end)
 
-    if episode % 20 == 0:
-        agent.model.save('models/{}_{}'.format(model_name, episode))
+    if episode % 10 == 0:
+        agent.save(episode)
