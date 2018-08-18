@@ -42,8 +42,8 @@ class Agent:
 
 	def __init__(self, state_size, pretrained=False, model_name=None):
 		'''agent config'''
-		self.state_size = state_size    # normalized previous days
-		self.action_size = 3            # [sit, buy, sell]
+		self.state_size = state_size    	# normalized previous days
+		self.action_size = 3           		# [sit, buy, sell]
 		self.model_name = model_name
 		self.inventory = []
 		self.memory = deque(maxlen=1000)
@@ -57,17 +57,15 @@ class Agent:
 		self.epsilon_decay = 0.995
 		self.learning_rate = 0.001
 		self.loss = huber_loss
-		self.custom_objects = {'huber_loss': huber_loss}
+		self.custom_objects = {'huber_loss': huber_loss}	# important for loading the model from memory
 		self.optimizer = RMSprop(lr=self.learning_rate)
 		self.initializer = VarianceScaling()
 
 		'''load pretrained model'''
 		if pretrained and self.model_name is not None:
 			self.model = self.load()
-			print('Loaded {} model!\n'.format(self.model_name))
 		else:
 			self.model = self._model()
-
 
 	"""
     Create the model
@@ -93,14 +91,12 @@ class Agent:
 		model.compile(loss=self.loss, optimizer=self.optimizer)
 		return model
 
-
 	"""
 	Remember the action on a certain step
 	"""
 
 	def remember(self, state, action, reward, next_state, done):
 		self.memory.append((state, action, reward, next_state, done))
-
 
 	"""
     Take action from given possible actions
@@ -114,7 +110,6 @@ class Agent:
 			return 1
 		options = self.model.predict(state)
 		return np.argmax(options[0])
-
 
 	"""
     Train on previous experience in memory

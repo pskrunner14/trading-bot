@@ -9,28 +9,32 @@ from utils import get_stock_data, format_position
 
 TENSORFLOW_BACKEND = True
 
+
 """
 Print result
 """
 
 def show_train_result(result, val_position, initial_offset):
     if val_position == initial_offset or val_position == 0.0:
-        print('Episode {}/{} - Train Position: {}  Val Position: USELESS  Loss: {:.4f}  (~{:.4f} secs)'.format(result[0], 
-                result[1], format_position(result[2]), result[3], result[4]))
+        print('Episode {}/{} - Train Position: {}  Val Position: USELESS  Train Loss: {:.4f}  (~{:.4f} secs)'
+            .format(result[0], result[1], format_position(result[2]), result[3], result[4]))
     else:
-        print('Episode {}/{} - Train Position: {}  Val Position: {}  Loss: {:.4f}  (~{:.4f} secs)'.format(result[0], 
-                result[1], format_position(result[2]), format_position(val_position), result[3], result[4]))
+        print('Episode {}/{} - Train Position: {}  Val Position: {}  Train Loss: {:.4f}  (~{:.4f} secs)'
+            .format(result[0], result[1], format_position(result[2]), format_position(val_position), result[3], result[4]))
 
 if __name__ == '__main__':
 
-    """Faster computation on CPU (only if using tensorflow-gpu)"""
+    '''Faster computation on CPU (only if using tensorflow-gpu)'''
     if TENSORFLOW_BACKEND:
+        print('Switching to TensorFlow for CPU...')
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-    if len(sys.argv) < 7:
-        print('Usage: python train.py [train stock] [val stock] [window] [episodes] [model] [pretrained (0/1)]')
+    if len(sys.argv) == 8:
+        train_stock_name, val_stock_name, window_size, batch_size, episode_count, model_name, pretrained = sys.argv[1], \
+            sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), sys.argv[6], bool(int(sys.argv[7]))
+    else:
+        print('Usage: python train.py [train stock] [val stock] [window] [batch size] [episodes] [model] [pretrained (0/1)]')
         exit(0)
-    train_stock_name, val_stock_name, window_size, episode_count, model_name, pretrained = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5], bool(int(sys.argv[6]))
 
     agent = Agent(window_size, pretrained=pretrained, model_name=model_name)
     train_data = get_stock_data(train_stock_name)
