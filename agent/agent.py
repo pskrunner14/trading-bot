@@ -1,5 +1,4 @@
 import random
-import pickle
 from collections import deque
 
 import numpy as np
@@ -8,7 +7,7 @@ import keras.backend as K
 from keras.models import Sequential
 from keras.models import load_model
 from keras.layers import Activation, Dense
-from keras.optimizers import RMSprop, Adam
+from keras.optimizers import RMSprop
 from keras.initializers import VarianceScaling
 
 from utils import save_pickle, load_pickle
@@ -42,15 +41,15 @@ class Agent:
 	"""
 
 	def __init__(self, state_size, pretrained=False, model_name=None):
-		# agent config
+		'''agent config'''
 		self.state_size = state_size    # normalized previous days
 		self.action_size = 3            # [sit, buy, sell]
 		self.model_name = model_name
 		self.inventory = []
 		self.memory = deque(maxlen=1000)
 		self.first_iter = True
-
-        # model config
+		
+		'''model config'''
 		self.model_name = model_name
 		self.gamma = 0.95
 		self.epsilon = 1.0
@@ -62,13 +61,10 @@ class Agent:
 		self.optimizer = RMSprop(lr=self.learning_rate)
 		self.initializer = VarianceScaling()
 
-		# load pretrained model or instantiate a new one
+		'''load pretrained model'''
 		if pretrained and self.model_name is not None:
 			self.model = self.load()
 			print('Loaded {} model!\n'.format(self.model_name))
-			print(self.model.name)
-			print(str(self.model.optimizer))
-			print(str(self.model.loss))
 		else:
 			self.model = self._model()
 
@@ -148,14 +144,12 @@ class Agent:
 
 		return loss
 
-
 	"""
 	Save agent model on disk
 	"""
 
 	def save(self, episode):
 		self.model.save('models/{}_{}'.format(self.model_name, episode))
-
 
 	"""
 	Load the agent model saved on disk
