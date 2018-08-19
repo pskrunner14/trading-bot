@@ -19,7 +19,7 @@ def train_model(agent, episode, data, episode_count=100, batch_size=32, window_s
     start = clock()
     state = get_state(data, 0, window_size + 1)
 
-    for t in tqdm(range(data_length), total=data_length, leave=False, desc='Episode {}/{}'.format(episode, episode_count)):
+    for t in tqdm(range(data_length), total=data_length, leave=True, ascii=True, desc='Episode {}/{}'.format(episode, episode_count)):
         action = agent.act(state)
 
         # SIT

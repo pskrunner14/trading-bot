@@ -40,7 +40,6 @@ if __name__ == '__main__':
     train_data = get_stock_data(train_stock_name)
     test_data = get_stock_data(val_stock_name)
 
-    batch_size = 32
     initial_offset = test_data[1] - test_data[0]
 
     for episode in range(1, episode_count + 1):
