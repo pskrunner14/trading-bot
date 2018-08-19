@@ -1,4 +1,4 @@
-# Overview ![Under Development](./images/under-dev.svg)
+# Overview
 
 Stock Trading Bot using Deep Reinforcement Learning (Deep Q-learning), Keras and TensorFlow. Reinforcement Learning is a type of machine learning that allows us to create intelligent agents that learn from the environment by interacting with it, it learns by trial and error. After each action, the agent receives the feedback in the form of reward or penalty. The feedback consists of the reward and next state of the environment. The reward is usually defined by a human. We can define reward as the profit from selling the stock bought at the original starting point.
 
@@ -65,6 +65,14 @@ Total params: 7,659
 Trainable params: 7,659
 Non-trainable params: 0
 ```
+
+## Model Architecture
+
+* 5 Dense Layers with hidden units (24, 64, 64, 24, 3)
+* ReLU Activations
+* Variance Scaling Kernel Initializers
+* Huber Loss Function
+* RMSprop Optimizer
 
 ## References
 
