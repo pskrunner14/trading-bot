@@ -76,6 +76,7 @@ Non-trainable params: 0
 
 ## References
 
+* [Deep Q-Learning with Keras and Gym](https://keon.io/deep-q-learning/)
 * [Playing Atari with Deep Reinforcement Learning](https://arxiv.org/abs/1312.5602)
 * [Human Level Control Through Deep Reinforcement Learning](https://deepmind.com/research/publications/human-level-control-through-deep-reinforcement-learning/)
 
