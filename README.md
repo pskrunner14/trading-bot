@@ -1,6 +1,6 @@
 # Overview ![Under Development](./images/under-dev.svg)
 
-Stock Trading using a Reinforcement Learning algorithm called Deep Q-Learning
+Stock Trading Bot using Deep Reinforcement Learning (Deep Q-learning), Keras and TensorFlow. Reinforcement Learning is a type of machine learning that allows us to create intelligent agents that learn from the environment by interacting with it, it learns by trial and error. After each action, the agent receives the feedback in the form of reward or penalty. The feedback consists of the reward and next state of the environment. The reward is usually defined by a human. We can define reward as the profit from selling the stock bought at the original starting point.
 
 ## Dataset
 
@@ -65,6 +65,11 @@ Total params: 7,659
 Trainable params: 7,659
 Non-trainable params: 0
 ```
+
+## References
+
+* [Playing Atari with Deep Reinforcement Learning](https://arxiv.org/abs/1312.5602)
+* [Human Level Control Through Deep Reinforcement Learning](https://deepmind.com/research/publications/human-level-control-through-deep-reinforcement-learning/)
 
 ## Built With
 
