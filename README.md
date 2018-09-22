@@ -88,10 +88,6 @@ Non-trainable params: 0
 * NumPy
 * tqdm
 
-## Authors
+## Credits
 
-Prabhsimran Singh
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE.md file for details
+The code in this repo is a modification/impovement over [q-trader](https://github.com/edwardhdlu/q-trader)
