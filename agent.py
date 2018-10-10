@@ -10,35 +10,20 @@ from keras.layers import Activation, Dense
 from keras.optimizers import RMSprop
 from keras.initializers import VarianceScaling
 
-from utils import save_pickle, load_pickle
-
-
-"""
-Huber loss - Custom Loss Function for Q Learning
-
-Links: 	https://en.wikipedia.org/wiki/Huber_loss
-		https://jaromiru.com/2017/05/27/on-using-huber-loss-in-deep-q-learning/
-"""
-
 def huber_loss(y_true, y_pred, clip_delta=1.0):
+	""" Huber loss - Custom Loss Function for Q Learning
+
+	Links: 	https://en.wikipedia.org/wiki/Huber_loss
+			https://jaromiru.com/2017/05/27/on-using-huber-loss-in-deep-q-learning/
+	"""
 	error = y_true - y_pred
-	cond  = K.abs(error) < clip_delta
-
+	cond  = K.abs(error) <= clip_delta
 	squared_loss = 0.5 * K.square(error)
-	linear_loss  = clip_delta * (K.abs(error) - 0.5 * clip_delta)
-
-	return K.mean(tf.where(cond, squared_loss, linear_loss))
-
-
-"""
-AGENT - Stock Trading Bot
-"""
+	quadratic_loss = 0.5 * K.square(clip_delta) + clip_delta * (K.abs(error) - clip_delta)
+	return K.mean(tf.where(cond, squared_loss, quadratic_loss))
 
 class Agent:
-
-	"""
-    Initialization of agent
-	"""
+	""" Stock Trading Bot """
 
 	def __init__(self, state_size, pretrained=False, model_name=None):
 		'''agent config'''
@@ -67,42 +52,28 @@ class Agent:
 		else:
 			self.model = self._model()
 
-	"""
-    Create the model
-	"""
-
 	def _model(self):
+		"""	Creates the model. """
 		model = Sequential()
-		
 		model.add(Dense(units=24, input_dim=self.state_size, kernel_initializer=self.initializer))
 		model.add(Activation('relu'))
-		
 		model.add(Dense(units=64, kernel_initializer=self.initializer))
 		model.add(Activation('relu'))
-
 		model.add(Dense(units=64, kernel_initializer=self.initializer))
 		model.add(Activation('relu'))
-		
 		model.add(Dense(units=24, kernel_initializer=self.initializer))
 		model.add(Activation('relu'))
-		
 		model.add(Dense(units=self.action_size, kernel_initializer=self.initializer))
 
 		model.compile(loss=self.loss, optimizer=self.optimizer)
 		return model
 
-	"""
-	Remember the action on a certain step
-	"""
-
 	def remember(self, state, action, reward, next_state, done):
+		""" Adds relevant data to memory. """
 		self.memory.append((state, action, reward, next_state, done))
 
-	"""
-    Take action from given possible actions
-	"""
-
 	def act(self, state, is_eval=False):
+		""" Take action from given possible set of actions. """
 		if not is_eval and random.random() <= self.epsilon:
 			return random.randrange(self.action_size)
 		if self.first_iter:
@@ -111,12 +82,8 @@ class Agent:
 		options = self.model.predict(state)
 		return np.argmax(options[0])
 
-	"""
-    Train on previous experience in memory
-	"""
-
 	def train_experience_replay(self, batch_size):
-		
+		""" Train on previous experiences in memory. """
 		mini_batch = random.sample(self.memory, batch_size)
 		
 		X_train, y_train = [], []
@@ -139,16 +106,8 @@ class Agent:
 
 		return loss
 
-	"""
-	Save agent model on disk
-	"""
-
 	def save(self, episode):
 		self.model.save('models/{}_{}'.format(self.model_name, episode))
-
-	"""
-	Load the agent model saved on disk
-	"""
 
 	def load(self):
 		return load_model('models/' + self.model_name, custom_objects=self.custom_objects)
