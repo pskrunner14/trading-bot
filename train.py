@@ -13,11 +13,12 @@ from time import clock
 from agent import Agent
 from evaluate import evaluate_model
 from utils import (
-    get_state, 
-    get_stock_data, 
-    format_currency, 
+    get_state,
+    get_stock_data,
+    format_currency,
     format_position
 )
+
 
 @click.command()
 @click.option(
@@ -65,10 +66,10 @@ from utils import (
     help='If model is pre-trained'
 )
 @click.option(
-	'-d',
-	'--debug',
-	is_flag=True,
-	help='Flag for debug mode (prints position on each step during evaluation)'
+    '-d',
+    '--debug',
+    is_flag=True,
+    help='Flag for debug mode (prints position on each step during evaluation)'
 )
 def main(train_stock, val_stock, window_size, batch_size, ep_count, model_name, pretrained, debug):
     """ Trains the stock trading bot using Deep Q-Learning.
@@ -87,9 +88,10 @@ def main(train_stock, val_stock, window_size, batch_size, ep_count, model_name, 
 
     for episode in range(1, ep_count + 1):
         train_result = train_model(agent, episode, train_data, ep_count=ep_count,
-                                    batch_size=batch_size, window_size=window_size)
-        val_result = evaluate_model(agent, val_data, window_size, debug)
+                                   batch_size=batch_size, window_size=window_size)
+        val_result, _ = evaluate_model(agent, val_data, window_size, debug)
         show_train_result(train_result, val_result, initial_offset)
+
 
 def train_model(agent, episode, data, ep_count=100, batch_size=32, window_size=10):
     data_length = len(data) - 1
@@ -121,28 +123,31 @@ def train_model(agent, episode, data, ep_count=100, batch_size=32, window_size=1
             avg_loss.append(loss)
         if done:
             end = clock() - start
-            
+
     if episode % 10 == 0:
         agent.save(episode)
     return (episode, ep_count, total_profit, np.mean(np.array(avg_loss)), end)
-        
+
+
 def show_train_result(result, val_position, initial_offset):
     """ Displays training results. """
     if val_position == initial_offset or val_position == 0.0:
         logging.info('Episode {}/{} - Train Position: {}  Val Position: USELESS  Train Loss: {:.4f}  (~{:.4f} secs)'
-            .format(result[0], result[1], format_position(result[2]), result[3], result[4]))
+                     .format(result[0], result[1], format_position(result[2]), result[3], result[4]))
     else:
         logging.info('Episode {}/{} - Train Position: {}  Val Position: {}  Train Loss: {:.4f}  (~{:.4f} secs)'
-            .format(result[0], result[1], format_position(result[2]), format_position(val_position), result[3], result[4]))
+                     .format(result[0], result[1], format_position(result[2]), format_position(val_position), result[3], result[4]))
+
 
 def switch_k_backend_device():
     """ Switches `keras` backend from GPU to CPU if required.
-    
+
     Faster computation on CPU (if using tensorflow-gpu).
     """
     if K.backend() == 'tensorflow':
         logging.debug('switching to TensorFlow for CPU')
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
 
 if __name__ == '__main__':
     coloredlogs.install(level='DEBUG')
