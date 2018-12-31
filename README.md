@@ -2,6 +2,8 @@
 
 Stock Trading Bot using Deep Reinforcement Learning (Deep Q-learning), Keras and TensorFlow. Reinforcement Learning is a type of machine learning that allows us to create intelligent agents that learn from the environment by interacting with it, it learns by trial and error. After each action, the agent receives the feedback in the form of reward or penalty. The feedback consists of the reward and next state of the environment. The reward is usually defined by a human. We can define reward as the profit from selling the stock bought at the original starting point.
 
+![Google Stock Trading bot](./extra/visualization.png)
+
 ## Dataset
 
 You can either use the Historical Financial data already present under `data/` or download your own from [Yahoo! Finance](https://ca.finance.yahoo.com/) for training.
