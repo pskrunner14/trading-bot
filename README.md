@@ -4,6 +4,8 @@ Stock Trading Bot using Deep Reinforcement Learning (Deep Q-learning), Keras and
 
 ![Google Stock Trading bot](./extra/visualization.png)
 
+Trading `GOOGL`, 2018 with a profit of $517.44
+
 ## Dataset
 
 You can either use the Historical Financial data already present under `data/` or download your own from [Yahoo! Finance](https://ca.finance.yahoo.com/) for training.
