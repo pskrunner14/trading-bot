@@ -12,19 +12,19 @@ You can either use the Historical Financial data already present under `data/` o
 
 In order to train the model, you will need to install the required python packages:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
 Now you can open up a terminal and start training the agent:
 
-```
+```bash
 python train.py --train-stock data/GOOGL.csv --val-stock data/GOOGL_2018.csv
 ```
 
 Once you're done training, run the evaluation script and let the agent make stock decisions:
 
-```
+```bash
 python evaluate.py --eval-data data/AAPL_2018.csv --window-size 10 --model-name model_GOOGL_10 --debug
 ```
 
