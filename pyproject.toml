@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "trading_bot"
+version = "0.0.1"
+description = "Automated Stock Trading via Deep Q-Learning"
+authors = []
+
+[tool.poetry.dependencies]
+python = "~3.6"
+keras = "2.3.1"
+tensorflow = "1.14.0"
+pandas = "^0.24.2"
+numpy = "^1.16.1"
+tqdm = "^4.24.0"
+docopt = "^0.6.2"
+coloredlogs = "^10.0"
+jupyterlab = "^1.0.1"

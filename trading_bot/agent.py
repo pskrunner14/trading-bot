@@ -1,9 +1,11 @@
 import random
+
 from collections import deque
 
 import numpy as np
 import tensorflow as tf
 import keras.backend as K
+
 from keras.models import Sequential
 from keras.models import load_model
 from keras.layers import Activation, Dense
@@ -12,10 +14,10 @@ from keras.initializers import VarianceScaling
 
 
 def huber_loss(y_true, y_pred, clip_delta=1.0):
-    """ Huber loss - Custom Loss Function for Q Learning
+    """Huber loss - Custom Loss Function for Q Learning
 
     Links: 	https://en.wikipedia.org/wiki/Huber_loss
-                    https://jaromiru.com/2017/05/27/on-using-huber-loss-in-deep-q-learning/
+            https://jaromiru.com/2017/05/27/on-using-huber-loss-in-deep-q-learning/
     """
     error = y_true - y_pred
     cond = K.abs(error) <= clip_delta
@@ -28,7 +30,7 @@ class Agent:
     """ Stock Trading Bot """
 
     def __init__(self, state_size, pretrained=False, model_name=None):
-        '''agent config'''
+        # agent config
         self.state_size = state_size    	# normalized previous days
         self.action_size = 3           		# [sit, buy, sell]
         self.model_name = model_name
@@ -36,7 +38,7 @@ class Agent:
         self.memory = deque(maxlen=1000)
         self.first_iter = True
 
-        '''model config'''
+        # model config
         self.model_name = model_name
         self.gamma = 0.95
         self.epsilon = 1.0
@@ -48,14 +50,15 @@ class Agent:
         self.optimizer = RMSprop(lr=self.learning_rate)
         self.initializer = VarianceScaling()
 
-        '''load pretrained model'''
+        # load pretrained model
         if pretrained and self.model_name is not None:
             self.model = self.load()
         else:
             self.model = self._model()
 
     def _model(self):
-        """	Creates the model. """
+        """Creates the model
+        """
         model = Sequential()
         model.add(Dense(units=24, input_dim=self.state_size, kernel_initializer=self.initializer))
         model.add(Activation('relu'))
@@ -71,38 +74,46 @@ class Agent:
         return model
 
     def remember(self, state, action, reward, next_state, done):
-        """ Adds relevant data to memory. """
+        """Adds relevant data to memory
+        """
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state, is_eval=False):
-        """ Take action from given possible set of actions. """
+        """Take action from given possible set of actions
+        """
+        # take random action in order to diversify experience at the beginning
         if not is_eval and random.random() <= self.epsilon:
             return random.randrange(self.action_size)
+
         if self.first_iter:
             self.first_iter = False
-            return 1
-        options = self.model.predict(state)
-        return np.argmax(options[0])
+            return 1 # make a definite buy on the first iter
+
+        action_probs = self.model.predict(state)
+        return np.argmax(action_probs[0])
 
     def train_experience_replay(self, batch_size):
-        """ Train on previous experiences in memory. """
+        """Train on previous experiences in memory
+        """
         mini_batch = random.sample(self.memory, batch_size)
 
         X_train, y_train = [], []
 
         for state, action, reward, next_state, done in mini_batch:
-            target = reward
-            if not done:
-                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
+            if done:
+                q_true = reward
+            else:
+                q_true = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
 
-            target_f = self.model.predict(state)
-            target_f[0][action] = target
+            qv_pred = self.model.predict(state)
+            qv_pred[0][action] = q_true
             X_train.append(state[0])
-            y_train.append(target_f[0])
+            y_train.append(qv_pred[0])
 
         history = self.model.fit(np.array(X_train), np.array(y_train), epochs=1, verbose=0)
         loss = history.history['loss'][0]
 
+        # as the training goes on we want the agent to make more and more decisions by itself
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
