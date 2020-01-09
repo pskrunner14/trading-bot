@@ -101,19 +101,28 @@ class Agent:
 
         for state, action, reward, next_state, done in mini_batch:
             if done:
-                q_true = reward
+                target = reward
             else:
-                q_true = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
+                # approximate q-learning equation
+                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
 
-            qv_pred = self.model.predict(state)
-            qv_pred[0][action] = q_true
+            # estimate value of next state based
+            # on current state
+            target_pred = self.model.predict(state)
+            # update the target for current action
+            target_pred[0][action] = target
+
             X_train.append(state[0])
-            y_train.append(qv_pred[0])
+            y_train.append(target_pred[0])
 
-        history = self.model.fit(np.array(X_train), np.array(y_train), epochs=1, verbose=0)
-        loss = history.history['loss'][0]
+        # update q-function parameters based on huber loss gradient
+        loss = self.model.fit(
+            np.array(X_train), np.array(y_train),
+            epochs=1, verbose=0
+        ).history['loss'][0]
 
-        # as the training goes on we want the agent to make more and more decisions by itself
+        # as the training goes on we want the agent to
+        # make less random and more optimal decisions
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
