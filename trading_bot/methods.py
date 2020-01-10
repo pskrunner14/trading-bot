@@ -39,8 +39,9 @@ def train_model(agent, episode, data, ep_count=100, batch_size=32, window_size=1
         # SELL
         elif action == 2 and len(agent.inventory) > 0:
             bought_price = agent.inventory.pop(0)
-            reward = max(data[t] - bought_price, 0)
-            total_profit += data[t] - bought_price
+            delta = data[t] - bought_price
+            reward = delta #max(delta, 0)
+            total_profit += delta
 
         # HOLD
         else:
@@ -90,8 +91,9 @@ def evaluate_model(agent, data, window_size, debug):
         # SELL
         elif action == 2 and len(agent.inventory) > 0:
             bought_price = agent.inventory.pop(0)
-            reward = max(data[t] - bought_price, 0)
-            total_profit += data[t] - bought_price
+            delta = data[t] - bought_price
+            reward = delta #max(delta, 0)
+            total_profit += delta
 
             history.append((data[t], "SELL"))
             if debug:

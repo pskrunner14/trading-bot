@@ -9,16 +9,16 @@ Generally, Reinforcement Learning is a family of machine learning techniques tha
 ## Approach
 
 This work uses a Model-free Reinforcement Learning technique called Deep Q-Learning (neural variant of Q-Learning).
-At any given time (episode), an agent abserves it's current state (n-day window stock price representation), selects and performs an action (buy/sell/hold), observes a subsequent state, receives an immediate feedback (difference in portfolio position) and lastly adjusts it's Q-values (model parameters in this case) based on the gradient of the loss computed.
+At any given time (episode), an agent abserves it's current state (n-day window stock price representation), selects and performs an action (buy/sell/hold), observes a subsequent state, receives some reward signal (difference in portfolio position) and lastly adjusts it's parameters based on the gradient of the loss computed.
 The important idea here is that this technique can be applied to any real world task that can be described loosely as a Markovian process.
 
 ## Results
 
-You can obtain similar visualizations of your trading episodes using the notebook provided:
+Trained on `GOOG` 2010-17 stock data, tested on 2019 with a profit of $1141.45 (validated on 2018 with profit of $863.41):
 
 ![Google Stock Trading episode](./extra/visualization.png)
 
-Trading `GOOGL` stock, 2018 with a profit of $517.44
+You can obtain similar visualizations of your model evaluations using the [notebook](./visualize.ipynb) provided.
 
 ## Some Caveats
 
@@ -41,13 +41,13 @@ pip3 install -r requirements.txt
 Now you can open up a terminal and start training the agent:
 
 ```bash
-python3 train.py data/GOOGL.csv data/GOOGL_2018.csv
+python3 train.py data/GOOG.csv data/GOOG_2018.csv
 ```
 
 Once you're done training, run the evaluation script and let the agent make trading decisions:
 
 ```bash
-python3 eval.py data/GOOGL_2019.csv --window-size 10 --model-name model_GOOGL_10 --debug
+python3 eval.py data/GOOG_2019.csv --model-name model_GOOG_50 --debug
 ```
 
 Now you are all set up!

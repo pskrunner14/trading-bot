@@ -8,9 +8,8 @@ import keras.backend as K
 
 from keras.models import Sequential
 from keras.models import load_model
-from keras.layers import Activation, Dense
-from keras.optimizers import RMSprop
-from keras.initializers import VarianceScaling
+from keras.layers import Dense
+from keras.optimizers import Adam
 
 
 def huber_loss(y_true, y_pred, clip_delta=1.0):
@@ -29,26 +28,27 @@ def huber_loss(y_true, y_pred, clip_delta=1.0):
 class Agent:
     """ Stock Trading Bot """
 
-    def __init__(self, state_size, pretrained=False, model_name=None):
+    def __init__(self, state_size, algo="dqn", pretrained=False, model_name=None):
+        self.algo = algo
+
         # agent config
         self.state_size = state_size    	# normalized previous days
         self.action_size = 3           		# [sit, buy, sell]
         self.model_name = model_name
         self.inventory = []
-        self.memory = deque(maxlen=1000)
+        self.memory = deque(maxlen=10000)
         self.first_iter = True
 
         # model config
         self.model_name = model_name
-        self.gamma = 0.95
+        self.gamma = 0.95 # affinity for long term reward
         self.epsilon = 1.0
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
         self.loss = huber_loss
-        self.custom_objects = {'huber_loss': huber_loss}  # important for loading the model from memory
-        self.optimizer = RMSprop(lr=self.learning_rate)
-        self.initializer = VarianceScaling()
+        self.custom_objects = {"huber_loss": huber_loss}  # important for loading the model from memory
+        self.optimizer = Adam(lr=self.learning_rate)
 
         # load pretrained model
         if pretrained and self.model_name is not None:
@@ -60,15 +60,11 @@ class Agent:
         """Creates the model
         """
         model = Sequential()
-        model.add(Dense(units=24, input_dim=self.state_size, kernel_initializer=self.initializer))
-        model.add(Activation('relu'))
-        model.add(Dense(units=64, kernel_initializer=self.initializer))
-        model.add(Activation('relu'))
-        model.add(Dense(units=64, kernel_initializer=self.initializer))
-        model.add(Activation('relu'))
-        model.add(Dense(units=24, kernel_initializer=self.initializer))
-        model.add(Activation('relu'))
-        model.add(Dense(units=self.action_size, kernel_initializer=self.initializer))
+        model.add(Dense(units=128, activation="relu", input_dim=self.state_size))
+        model.add(Dense(units=256, activation="relu"))
+        model.add(Dense(units=256, activation="relu"))
+        model.add(Dense(units=128, activation="relu"))
+        model.add(Dense(units=self.action_size))
 
         model.compile(loss=self.loss, optimizer=self.optimizer)
         return model
@@ -96,30 +92,31 @@ class Agent:
         """Train on previous experiences in memory
         """
         mini_batch = random.sample(self.memory, batch_size)
-
         X_train, y_train = [], []
+        
+        if self.algo == "dqn":
+            for state, action, reward, next_state, done in mini_batch:
+                if done:
+                    target = reward
+                else:
+                    # approximate q-learning equation
+                    target = reward + gamma * np.amax(agent.predict(next_state)[0])
 
-        for state, action, reward, next_state, done in mini_batch:
-            if done:
-                target = reward
+                # estimate q-values based on current state
+                q_values = agent.predict(state)
+                # update the target for current action based on discounted reward
+                q_values[0][action] = target
+
+                X_train.append(state[0])
+                y_train.append(q_values[0])
             else:
-                # approximate q-learning equation
-                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
-
-            # estimate value of next state based
-            # on current state
-            target_pred = self.model.predict(state)
-            # update the target for current action
-            target_pred[0][action] = target
-
-            X_train.append(state[0])
-            y_train.append(target_pred[0])
+                raise NotImplementedError()
 
         # update q-function parameters based on huber loss gradient
         loss = self.model.fit(
             np.array(X_train), np.array(y_train),
             epochs=1, verbose=0
-        ).history['loss'][0]
+        ).history["loss"][0]
 
         # as the training goes on we want the agent to
         # make less random and more optimal decisions
@@ -129,7 +126,7 @@ class Agent:
         return loss
 
     def save(self, episode):
-        self.model.save('models/{}_{}'.format(self.model_name, episode))
+        self.model.save("models/{}_{}".format(self.model_name, episode))
 
     def load(self):
-        return load_model('models/' + self.model_name, custom_objects=self.custom_objects)
+        return load_model("models/" + self.model_name, custom_objects=self.custom_objects)
