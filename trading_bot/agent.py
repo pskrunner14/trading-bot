@@ -28,9 +28,7 @@ def huber_loss(y_true, y_pred, clip_delta=1.0):
 class Agent:
     """ Stock Trading Bot """
 
-    def __init__(self, state_size, algo="dqn", pretrained=False, model_name=None):
-        self.algo = algo
-
+    def __init__(self, state_size, pretrained=False, model_name=None):
         # agent config
         self.state_size = state_size    	# normalized previous days
         self.action_size = 3           		# [sit, buy, sell]
@@ -94,23 +92,20 @@ class Agent:
         mini_batch = random.sample(self.memory, batch_size)
         X_train, y_train = [], []
         
-        if self.algo == "dqn":
-            for state, action, reward, next_state, done in mini_batch:
-                if done:
-                    target = reward
-                else:
-                    # approximate q-learning equation
-                    target = reward + gamma * np.amax(agent.predict(next_state)[0])
-
-                # estimate q-values based on current state
-                q_values = agent.predict(state)
-                # update the target for current action based on discounted reward
-                q_values[0][action] = target
-
-                X_train.append(state[0])
-                y_train.append(q_values[0])
+        for state, action, reward, next_state, done in mini_batch:
+            if done:
+                target = reward
             else:
-                raise NotImplementedError()
+                # approximate q-learning equation
+                target = reward + self.gamma * np.amax(self.model.predict(next_state)[0])
+
+            # estimate q-values based on current state
+            q_values = self.model.predict(state)
+            # update the target for current action based on discounted reward
+            q_values[0][action] = target
+
+            X_train.append(state[0])
+            y_train.append(q_values[0])
 
         # update q-function parameters based on huber loss gradient
         loss = self.model.fit(
