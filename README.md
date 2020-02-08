@@ -56,7 +56,7 @@ python3 train.py data/GOOG.csv data/GOOG_2018.csv --strategy t-dqn
 Once you're done training, run the evaluation script and let the agent make trading decisions:
 
 ```bash
-python3 eval.py data/GOOG_2019.csv --model-name model_GOOG_50 --debug
+python3 eval.py data/GOOG_2019.csv --model-name model_t-dqn_GOOG_10 --debug
 ```
 
 Now you are all set up!
