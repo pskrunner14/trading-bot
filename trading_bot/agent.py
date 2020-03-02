@@ -72,8 +72,10 @@ class Agent:
         model.add(Dense(units=256, activation="relu"))
         model.add(Dense(units=256, activation="relu"))
         model.add(Dense(units=128, activation="relu"))
-        model.add(Dense(units=self.action_size))
-
+        #Dueling Network Layers
+        model.add(Dense(self.action_size + 1, activation="linear"))
+        model.add(Lambda(lambda i: K.expand_dims(i[:,0],-1) + i[:,1:] - K.mean(i[:,1:], keepdims=True), output_shape=(self.action_size,)))
+        
         model.compile(loss=self.loss, optimizer=self.optimizer)
         return model
 
