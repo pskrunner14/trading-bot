@@ -44,13 +44,21 @@ You can download Historical Financial data from [Yahoo! Finance](https://ca.fina
 In order to use this project, you'll need to install the required python packages:
 
 ```bash
-pip3 install -r requirements.txt
+cat Pipfile
+pip install pipenv
+pipenv install
 ```
+
+And make sure to run 
+
+    pipenv shell
+
+To get into the pipenv environment.
 
 Now you can open up a terminal and start training the agent:
 
 ```bash
-python3 train.py data/GOOG.csv data/GOOG_2018.csv --strategy t-dqn
+python train.py data/GOOG.csv data/GOOG_2018.csv --strategy t-dqn
 ```
 
 Once you're done training, run the evaluation script and let the agent make trading decisions:
