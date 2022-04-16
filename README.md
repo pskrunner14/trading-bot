@@ -44,7 +44,9 @@ You can download Historical Financial data from [Yahoo! Finance](https://ca.fina
 In order to use this project, you'll need to install the required python packages:
 
 ```bash
-pip3 install -r requirements.txt
+cat Pipfile
+pip install pipenv
+pipenv install
 ```
 
 Now you can open up a terminal and start training the agent:

@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+keras = "*"
+tensorflow = "*"
+pandas = "*"
+numpy = "*"
+tqdm = "*"
+docopt = "*"
+coloredlogs = "*"
+jupyterlab = "*"
+altair = "*"
+seaborn = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3"
